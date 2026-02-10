@@ -35,4 +35,9 @@ public class TransactionController {
         BigDecimal balance = transactionService.getBalance();
         return ResponseEntity.ok(Map.of("balance", balance));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("OK");
+    }
 }
