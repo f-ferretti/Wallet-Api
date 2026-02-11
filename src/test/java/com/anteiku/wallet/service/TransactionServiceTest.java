@@ -11,10 +11,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -226,6 +225,224 @@ class TransactionServiceTest {
 
         // Then
         assertThat(balance).isEqualByComparingTo(new BigDecimal("-150.00"));
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe trovare una transazione per ID")
+    void shouldGetTransactionById() {
+        when(transactionRepository.findById("1")).thenReturn(Optional.of(incomeTransaction));
+
+        Optional<Transaction> result = transactionService.getTransactionById("1");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo("1");
+        assertThat(result.get().getAmount()).isEqualByComparingTo(new BigDecimal("1000.00"));
+        verify(transactionRepository, times(1)).findById("1");
+    }
+
+    @Test
+    @DisplayName("Dovrebbe restituire Optional vuoto quando transazione non esiste")
+    void shouldReturnEmptyWhenTransactionNotFound() {
+        when(transactionRepository.findById("999")).thenReturn(Optional.empty());
+
+        Optional<Transaction> result = transactionService.getTransactionById("999");
+
+        assertThat(result).isEmpty();
+        verify(transactionRepository, times(1)).findById("999");
+    }
+
+    @Test
+    @DisplayName("Dovrebbe eliminare una transazione")
+    void shouldDeleteTransaction() {
+        doNothing().when(transactionRepository).deleteById("1");
+
+        transactionService.deleteTransaction("1");
+
+        verify(transactionRepository, times(1)).deleteById("1");
+    }
+
+    @Test
+    @DisplayName("Dovrebbe aggiornare una transazione esistente")
+    void shouldUpdateTransaction() {
+        Transaction updatedTransaction = Transaction.builder()
+                .id("1")
+                .amount(new BigDecimal("1500.00"))
+                .category("Stipendio")
+                .description("Stipendio mensile aggiornato")
+                .type(Transaction.TransactionType.INCOME)
+                .date(LocalDateTime.now())
+                .build();
+
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(updatedTransaction);
+
+        Transaction result = transactionService.updateTransaction("1", updatedTransaction);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo("1");
+        assertThat(result.getAmount()).isEqualByComparingTo(new BigDecimal("1500.00"));
+        assertThat(result.getDescription()).isEqualTo("Stipendio mensile aggiornato");
+        verify(transactionRepository, times(1)).save(any(Transaction.class));
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni per tipo INCOME")
+    void shouldFilterTransactionsByTypeIncome() {
+        List<Transaction> transactions = Arrays.asList(incomeTransaction, expenseTransaction);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                Transaction.TransactionType.INCOME, null, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getType()).isEqualTo(Transaction.TransactionType.INCOME);
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni per tipo EXPENSE")
+    void shouldFilterTransactionsByTypeExpense() {
+        List<Transaction> transactions = Arrays.asList(incomeTransaction, expenseTransaction);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                Transaction.TransactionType.EXPENSE, null, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getType()).isEqualTo(Transaction.TransactionType.EXPENSE);
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni per periodo")
+    void shouldFilterTransactionsByDateRange() {
+        LocalDateTime today = LocalDateTime.now();
+        LocalDateTime yesterday = today.minusDays(1);
+        LocalDateTime tomorrow = today.plusDays(1);
+
+        Transaction pastTransaction = Transaction.builder()
+                .id("3")
+                .amount(new BigDecimal("100.00"))
+                .category("Test")
+                .description("Past")
+                .type(Transaction.TransactionType.INCOME)
+                .date(yesterday)
+                .build();
+
+        Transaction currentTransaction = Transaction.builder()
+                .id("4")
+                .amount(new BigDecimal("200.00"))
+                .category("Test")
+                .description("Current")
+                .type(Transaction.TransactionType.EXPENSE)
+                .date(today)
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(pastTransaction, currentTransaction);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                null, today.toLocalDate(), tomorrow.toLocalDate());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("4");
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni per tipo e periodo")
+    void shouldFilterTransactionsByTypeAndDateRange() {
+        LocalDateTime today = LocalDateTime.now();
+
+        Transaction income1 = Transaction.builder()
+                .amount(new BigDecimal("1000.00"))
+                .type(Transaction.TransactionType.INCOME)
+                .date(today.minusDays(2))
+                .build();
+
+        Transaction income2 = Transaction.builder()
+                .amount(new BigDecimal("500.00"))
+                .type(Transaction.TransactionType.INCOME)
+                .date(today)
+                .build();
+
+        Transaction expense = Transaction.builder()
+                .amount(new BigDecimal("200.00"))
+                .type(Transaction.TransactionType.EXPENSE)
+                .date(today)
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(income1, income2, expense);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                Transaction.TransactionType.INCOME,
+                today.toLocalDate().minusDays(1),
+                today.toLocalDate());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getAmount()).isEqualByComparingTo(new BigDecimal("500.00"));
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe restituire tutte le transazioni quando nessun filtro applicato")
+    void shouldReturnAllTransactionsWhenNoFilter() {
+        List<Transaction> transactions = Arrays.asList(incomeTransaction, expenseTransaction);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(null, null, null);
+
+        assertThat(result).hasSize(2);
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe restituire summary completo con entrate, uscite e saldo")
+    void shouldGetCompleteSummary() {
+        Transaction income1 = Transaction.builder()
+                .amount(new BigDecimal("1000.00"))
+                .type(Transaction.TransactionType.INCOME)
+                .build();
+
+        Transaction income2 = Transaction.builder()
+                .amount(new BigDecimal("500.00"))
+                .type(Transaction.TransactionType.INCOME)
+                .build();
+
+        Transaction expense1 = Transaction.builder()
+                .amount(new BigDecimal("200.00"))
+                .type(Transaction.TransactionType.EXPENSE)
+                .build();
+
+        Transaction expense2 = Transaction.builder()
+                .amount(new BigDecimal("150.00"))
+                .type(Transaction.TransactionType.EXPENSE)
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(income1, income2, expense1, expense2);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        Map<String, BigDecimal> summary = transactionService.getSummary();
+
+        assertThat(summary).containsKeys("totalIncome", "totalExpense", "balance");
+        assertThat(summary.get("totalIncome")).isEqualByComparingTo(new BigDecimal("1500.00"));
+        assertThat(summary.get("totalExpense")).isEqualByComparingTo(new BigDecimal("350.00"));
+        assertThat(summary.get("balance")).isEqualByComparingTo(new BigDecimal("1150.00"));
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe restituire summary con valori zero quando non ci sono transazioni")
+    void shouldReturnZeroSummaryWhenNoTransactions() {
+        when(transactionRepository.findAll()).thenReturn(Collections.emptyList());
+
+        Map<String, BigDecimal> summary = transactionService.getSummary();
+
+        assertThat(summary).containsKeys("totalIncome", "totalExpense", "balance");
+        assertThat(summary.get("totalIncome")).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(summary.get("totalExpense")).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(summary.get("balance")).isEqualByComparingTo(BigDecimal.ZERO);
         verify(transactionRepository, times(1)).findAll();
     }
 }
