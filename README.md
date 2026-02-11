@@ -97,6 +97,92 @@ Get the current wallet balance (`INCOME - EXPENSE`).
 
 ---
 
+### `GET /api/transactions/{id}`
+Get details of a specific transaction by ID.
+
+**Response:** `200 OK`
+```json
+{
+  "id": "abc123",
+  "amount": 50.00,
+  "category": "Cibo",
+  "description": "Cena al ristorante",
+  "date": "2024-01-15T20:30:00",
+  "type": "EXPENSE"
+}
+```
+
+**Error Response:** `404 Not Found` if transaction doesn't exist.
+
+---
+
+### `PUT /api/transactions/{id}`
+Update an existing transaction.
+
+**Request body:**
+```json
+{
+  "amount": 75.00,
+  "category": "Cibo",
+  "description": "Cena al ristorante aggiornata",
+  "type": "EXPENSE"
+}
+```
+
+**Response:** `200 OK` with the updated transaction.
+
+---
+
+### `DELETE /api/transactions/{id}`
+Delete a transaction by ID.
+
+**Response:** `204 No Content`
+
+---
+
+### `GET /api/transactions/filter`
+Filter transactions by type and/or date range.
+
+**Query parameters:**
+- `type` (optional): `INCOME` or `EXPENSE`
+- `startDate` (optional): Start date in format `YYYY-MM-DD`
+- `endDate` (optional): End date in format `YYYY-MM-DD`
+
+**Example:**
+```
+GET /api/transactions/filter?type=EXPENSE&startDate=2024-01-01&endDate=2024-01-31
+```
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "abc123",
+    "amount": 50.00,
+    "category": "Cibo",
+    "description": "Cena al ristorante",
+    "date": "2024-01-15T20:30:00",
+    "type": "EXPENSE"
+  }
+]
+```
+
+---
+
+### `GET /api/summary`
+Get complete statistics including total income, expenses, and balance.
+
+**Response:** `200 OK`
+```json
+{
+  "totalIncome": 1500.00,
+  "totalExpense": 1050.00,
+  "balance": 450.00
+}
+```
+
+---
+
 ## Testing
 
 ### Run all tests
