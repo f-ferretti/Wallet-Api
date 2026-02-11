@@ -34,6 +34,19 @@ The API will be available at `http://localhost:8080/api`.
 
 ## Endpoints
 
+### Swagger UI
+Access the interactive API documentation at:
+```
+http://localhost:8080/swagger-ui.html
+```
+
+### `GET /api/health`
+Health check endpoint.
+
+**Response:** `200 OK` with `"OK"`
+
+---
+
 ### `POST /api/transactions`
 Add a new transaction.
 
@@ -81,6 +94,28 @@ Get the current wallet balance (`INCOME - EXPENSE`).
   "balance": 450.00
 }
 ```
+
+---
+
+## Testing
+
+### Run all tests
+```bash
+mvn test
+```
+
+### Run specific test class
+```bash
+mvn test -Dtest=TransactionServiceTest
+```
+
+### Test coverage
+The project includes comprehensive unit tests for:
+- **TransactionService**: 8 test cases covering:
+  - Adding transactions
+  - Retrieving all transactions
+  - Balance calculation (positive, negative, zero)
+  - Edge cases (empty list, only income, only expenses)
 
 ---
 
