@@ -43,6 +43,7 @@ jobs:
     - name: Upload coverage to Codecov
       if: success()
       uses: codecov/codecov-action@v4
+      continue-on-error: true
       with:
         files: ./target/site/jacoco/jacoco.xml
         fail_ci_if_error: false
@@ -50,3 +51,4 @@ jobs:
 
     - name: Update dependency graph
       uses: advanced-security/maven-dependency-submission-action@v4
+      continue-on-error: true
