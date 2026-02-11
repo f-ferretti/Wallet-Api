@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -55,5 +56,60 @@ public class TransactionController {
     @ApiResponse(responseCode = "200", description = "API funzionante")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("OK");
+    }
+
+    @GetMapping("/transactions/{id}")
+    @Operation(summary = "Ottieni una transazione", description = "Restituisce i dettagli di una transazione specifica")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Transazione trovata"),
+        @ApiResponse(responseCode = "404", description = "Transazione non trovata")
+    })
+    public ResponseEntity<Transaction> getTransactionById(@PathVariable String id) {
+        return transactionService.getTransactionById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/transactions/{id}")
+    @Operation(summary = "Elimina una transazione", description = "Elimina una transazione esistente")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Transazione eliminata"),
+        @ApiResponse(responseCode = "404", description = "Transazione non trovata")
+    })
+    public ResponseEntity<Void> deleteTransaction(@PathVariable String id) {
+        transactionService.deleteTransaction(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/transactions/{id}")
+    @Operation(summary = "Aggiorna una transazione", description = "Modifica una transazione esistente")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Transazione aggiornata"),
+        @ApiResponse(responseCode = "400", description = "Dati non validi"),
+        @ApiResponse(responseCode = "404", description = "Transazione non trovata")
+    })
+    public ResponseEntity<Transaction> updateTransaction(
+            @PathVariable String id,
+            @Valid @RequestBody Transaction transaction) {
+        Transaction updated = transactionService.updateTransaction(id, transaction);
+        return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/transactions/filter")
+    @Operation(summary = "Filtra le transazioni", description = "Filtra le transazioni per tipo e/o periodo")
+    @ApiResponse(responseCode = "200", description = "Lista delle transazioni filtrate")
+    public ResponseEntity<List<Transaction>> filterTransactions(
+            @RequestParam(required = false) Transaction.TransactionType type,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate) {
+        List<Transaction> filtered = transactionService.filterTransactions(type, startDate, endDate);
+        return ResponseEntity.ok(filtered);
+    }
+
+    @GetMapping("/summary")
+    @Operation(summary = "Ottieni statistiche", description = "Restituisce totale entrate, uscite e saldo")
+    @ApiResponse(responseCode = "200", description = "Statistiche del wallet")
+    public ResponseEntity<Map<String, BigDecimal>> getSummary() {
+        return ResponseEntity.ok(transactionService.getSummary());
     }
 }
