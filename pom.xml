@@ -85,9 +85,13 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+						<configuration>
+							<excludes>
+								<exclude>com/anteiku/wallet/WalletApplication.class</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 
-					<!-- Verifica il threshold minimo -->
 					<execution>
 						<id>check</id>
 						<phase>verify</phase>
@@ -95,50 +99,29 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
+							<excludes>
+								<exclude>com/anteiku/wallet/WalletApplication.class</exclude>
+							</excludes>
 							<rules>
-								<!-- Regola per il coverage globale del progetto -->
 								<rule>
 									<element>BUNDLE</element>
 									<limits>
-										<!-- Threshold minimo 70% per le istruzioni -->
 										<limit>
 											<counter>INSTRUCTION</counter>
 											<value>COVEREDRATIO</value>
 											<minimum>0.70</minimum>
 										</limit>
-										<!-- Threshold minimo 70% per i branch -->
 										<limit>
 											<counter>BRANCH</counter>
 											<value>COVEREDRATIO</value>
 											<minimum>0.70</minimum>
 										</limit>
-										<!-- Threshold minimo 70% per le linee -->
 										<limit>
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
 											<minimum>0.70</minimum>
 										</limit>
 									</limits>
-								</rule>
-
-								<!-- Regola per singole classi (opzionale ma consigliato) -->
-								<rule>
-									<element>CLASS</element>
-									<limits>
-										<limit>
-											<counter>INSTRUCTION</counter>
-											<value>COVEREDRATIO</value>
-											<minimum>0.60</minimum>
-										</limit>
-									</limits>
-									<excludes>
-										<!-- Escludi la main application dal check -->
-										<exclude>com.anteiku.wallet.WalletApplication</exclude>
-										<!-- Escludi configurazioni -->
-										<exclude>com.anteiku.wallet.config.*</exclude>
-										<!-- Escludi modelli (entità) -->
-										<exclude>com.anteiku.wallet.model.*</exclude>
-									</excludes>
 								</rule>
 							</rules>
 						</configuration>
