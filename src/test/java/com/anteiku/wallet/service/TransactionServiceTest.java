@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,13 +57,10 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe aggiungere una transazione con successo")
     void shouldAddTransaction() {
-        // Given
         when(transactionRepository.save(any(Transaction.class))).thenReturn(incomeTransaction);
 
-        // When
         Transaction result = transactionService.addTransaction(incomeTransaction);
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo("1");
         assertThat(result.getAmount()).isEqualByComparingTo(new BigDecimal("1000.00"));
@@ -73,14 +71,11 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe restituire tutte le transazioni")
     void shouldGetAllTransactions() {
-        // Given
         List<Transaction> transactions = Arrays.asList(incomeTransaction, expenseTransaction);
         when(transactionRepository.findAll()).thenReturn(transactions);
 
-        // When
         List<Transaction> result = transactionService.getAllTransactions();
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result).hasSize(2);
         assertThat(result).containsExactly(incomeTransaction, expenseTransaction);
@@ -90,13 +85,10 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe restituire lista vuota quando non ci sono transazioni")
     void shouldReturnEmptyListWhenNoTransactions() {
-        // Given
         when(transactionRepository.findAll()).thenReturn(Collections.emptyList());
 
-        // When
         List<Transaction> result = transactionService.getAllTransactions();
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result).isEmpty();
         verify(transactionRepository, times(1)).findAll();
@@ -105,7 +97,6 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe calcolare il saldo correttamente con entrate e uscite")
     void shouldCalculateBalanceCorrectly() {
-        // Given
         Transaction income1 = Transaction.builder()
                 .amount(new BigDecimal("1000.00"))
                 .type(Transaction.TransactionType.INCOME)
@@ -129,11 +120,8 @@ class TransactionServiceTest {
         List<Transaction> transactions = Arrays.asList(income1, income2, expense1, expense2);
         when(transactionRepository.findAll()).thenReturn(transactions);
 
-        // When
         BigDecimal balance = transactionService.getBalance();
 
-        // Then
-        // Balance = (1000 + 500) - (200 + 150) = 1150
         assertThat(balance).isEqualByComparingTo(new BigDecimal("1150.00"));
         verify(transactionRepository, times(1)).findAll();
     }
@@ -141,13 +129,10 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe restituire saldo zero quando non ci sono transazioni")
     void shouldReturnZeroBalanceWhenNoTransactions() {
-        // Given
         when(transactionRepository.findAll()).thenReturn(Collections.emptyList());
 
-        // When
         BigDecimal balance = transactionService.getBalance();
 
-        // Then
         assertThat(balance).isEqualByComparingTo(BigDecimal.ZERO);
         verify(transactionRepository, times(1)).findAll();
     }
@@ -155,7 +140,6 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe calcolare saldo negativo quando le uscite superano le entrate")
     void shouldCalculateNegativeBalance() {
-        // Given
         Transaction income = Transaction.builder()
                 .amount(new BigDecimal("100.00"))
                 .type(Transaction.TransactionType.INCOME)
@@ -169,11 +153,8 @@ class TransactionServiceTest {
         List<Transaction> transactions = Arrays.asList(income, expense);
         when(transactionRepository.findAll()).thenReturn(transactions);
 
-        // When
         BigDecimal balance = transactionService.getBalance();
 
-        // Then
-        // Balance = 100 - 300 = -200
         assertThat(balance).isEqualByComparingTo(new BigDecimal("-200.00"));
         verify(transactionRepository, times(1)).findAll();
     }
@@ -181,7 +162,6 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe calcolare saldo correttamente con solo entrate")
     void shouldCalculateBalanceWithOnlyIncome() {
-        // Given
         Transaction income1 = Transaction.builder()
                 .amount(new BigDecimal("500.00"))
                 .type(Transaction.TransactionType.INCOME)
@@ -195,10 +175,8 @@ class TransactionServiceTest {
         List<Transaction> transactions = Arrays.asList(income1, income2);
         when(transactionRepository.findAll()).thenReturn(transactions);
 
-        // When
         BigDecimal balance = transactionService.getBalance();
 
-        // Then
         assertThat(balance).isEqualByComparingTo(new BigDecimal("800.00"));
         verify(transactionRepository, times(1)).findAll();
     }
@@ -206,7 +184,6 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Dovrebbe calcolare saldo correttamente con solo uscite")
     void shouldCalculateBalanceWithOnlyExpenses() {
-        // Given
         Transaction expense1 = Transaction.builder()
                 .amount(new BigDecimal("100.00"))
                 .type(Transaction.TransactionType.EXPENSE)
@@ -220,10 +197,8 @@ class TransactionServiceTest {
         List<Transaction> transactions = Arrays.asList(expense1, expense2);
         when(transactionRepository.findAll()).thenReturn(transactions);
 
-        // When
         BigDecimal balance = transactionService.getBalance();
 
-        // Then
         assertThat(balance).isEqualByComparingTo(new BigDecimal("-150.00"));
         verify(transactionRepository, times(1)).findAll();
     }
@@ -386,14 +361,278 @@ class TransactionServiceTest {
     }
 
     @Test
-    @DisplayName("Dovrebbe restituire tutte le transazioni quando nessun filtro applicato")
-    void shouldReturnAllTransactionsWhenNoFilter() {
+    @DisplayName("Dovrebbe restituire tutte le transazioni quando tutti i filtri sono null")
+    void shouldReturnAllTransactionsWhenAllFiltersAreNull() {
         List<Transaction> transactions = Arrays.asList(incomeTransaction, expenseTransaction);
         when(transactionRepository.findAll()).thenReturn(transactions);
 
         List<Transaction> result = transactionService.filterTransactions(null, null, null);
 
         assertThat(result).hasSize(2);
+        assertThat(result).containsExactlyInAnyOrder(incomeTransaction, expenseTransaction);
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni con solo startDate (endDate null)")
+    void shouldFilterTransactionsWithOnlyStartDate() {
+        LocalDateTime baseDate = LocalDateTime.of(2024, 1, 15, 10, 0);
+
+        Transaction beforeStart = Transaction.builder()
+                .id("1")
+                .amount(new BigDecimal("100.00"))
+                .category("Test")
+                .description("Before start")
+                .type(Transaction.TransactionType.INCOME)
+                .date(baseDate.minusDays(5))
+                .build();
+
+        Transaction afterStart = Transaction.builder()
+                .id("2")
+                .amount(new BigDecimal("200.00"))
+                .category("Test")
+                .description("After start")
+                .type(Transaction.TransactionType.INCOME)
+                .date(baseDate.plusDays(5))
+                .build();
+
+        Transaction onStartDate = Transaction.builder()
+                .id("3")
+                .amount(new BigDecimal("300.00"))
+                .category("Test")
+                .description("On start date")
+                .type(Transaction.TransactionType.INCOME)
+                .date(baseDate)
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(beforeStart, afterStart, onStartDate);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                null,
+                LocalDate.of(2024, 1, 15),
+                null
+        );
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(Transaction::getId)
+                .containsExactlyInAnyOrder("2", "3");
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni con solo endDate (startDate null)")
+    void shouldFilterTransactionsWithOnlyEndDate() {
+        LocalDateTime baseDate = LocalDateTime.of(2024, 1, 15, 10, 0);
+
+        Transaction beforeEnd = Transaction.builder()
+                .id("1")
+                .amount(new BigDecimal("100.00"))
+                .category("Test")
+                .description("Before end")
+                .type(Transaction.TransactionType.INCOME)
+                .date(baseDate.minusDays(5))
+                .build();
+
+        Transaction afterEnd = Transaction.builder()
+                .id("2")
+                .amount(new BigDecimal("200.00"))
+                .category("Test")
+                .description("After end")
+                .type(Transaction.TransactionType.INCOME)
+                .date(baseDate.plusDays(5))
+                .build();
+
+        Transaction onEndDate = Transaction.builder()
+                .id("3")
+                .amount(new BigDecimal("300.00"))
+                .category("Test")
+                .description("On end date")
+                .type(Transaction.TransactionType.INCOME)
+                .date(baseDate)
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(beforeEnd, afterEnd, onEndDate);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                null,
+                null,
+                LocalDate.of(2024, 1, 15)
+        );
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(Transaction::getId)
+                .containsExactlyInAnyOrder("1", "3");
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni all'inizio del range (boundary test)")
+    void shouldFilterTransactionsAtStartBoundary() {
+        LocalDate testDate = LocalDate.of(2024, 1, 15);
+        LocalDateTime exactStart = testDate.atStartOfDay();
+
+        Transaction atExactStart = Transaction.builder()
+                .id("1")
+                .amount(new BigDecimal("100.00"))
+                .category("Test")
+                .description("At exact start")
+                .type(Transaction.TransactionType.INCOME)
+                .date(exactStart)
+                .build();
+
+        Transaction oneSecondBefore = Transaction.builder()
+                .id("2")
+                .amount(new BigDecimal("200.00"))
+                .category("Test")
+                .description("One second before")
+                .type(Transaction.TransactionType.INCOME)
+                .date(exactStart.minusSeconds(1))
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(atExactStart, oneSecondBefore);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                null,
+                testDate,
+                testDate.plusDays(1)
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("1");
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare transazioni alla fine del range (boundary test)")
+    void shouldFilterTransactionsAtEndBoundary() {
+        LocalDate testDate = LocalDate.of(2024, 1, 15);
+
+        Transaction atExactEnd = Transaction.builder()
+                .id("1")
+                .amount(new BigDecimal("100.00"))
+                .category("Test")
+                .description("At exact end")
+                .type(Transaction.TransactionType.INCOME)
+                .date(testDate.atTime(23, 59, 59))
+                .build();
+
+        Transaction oneSecondAfter = Transaction.builder()
+                .id("2")
+                .amount(new BigDecimal("200.00"))
+                .category("Test")
+                .description("One second after")
+                .type(Transaction.TransactionType.INCOME)
+                .date(testDate.plusDays(1).atStartOfDay())
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(atExactEnd, oneSecondAfter);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                null,
+                testDate.minusDays(1),
+                testDate
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("1");
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare per tipo con solo startDate")
+    void shouldFilterByTypeWithOnlyStartDate() {
+        LocalDate startDate = LocalDate.of(2024, 1, 10);
+
+        Transaction oldIncome = Transaction.builder()
+                .id("1")
+                .amount(new BigDecimal("100.00"))
+                .category("Test")
+                .description("Old income")
+                .type(Transaction.TransactionType.INCOME)
+                .date(LocalDateTime.of(2024, 1, 5, 10, 0))
+                .build();
+
+        Transaction newIncome = Transaction.builder()
+                .id("2")
+                .amount(new BigDecimal("200.00"))
+                .category("Test")
+                .description("New income")
+                .type(Transaction.TransactionType.INCOME)
+                .date(LocalDateTime.of(2024, 1, 15, 10, 0))
+                .build();
+
+        Transaction newExpense = Transaction.builder()
+                .id("3")
+                .amount(new BigDecimal("50.00"))
+                .category("Test")
+                .description("New expense")
+                .type(Transaction.TransactionType.EXPENSE)
+                .date(LocalDateTime.of(2024, 1, 15, 10, 0))
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(oldIncome, newIncome, newExpense);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                Transaction.TransactionType.INCOME,
+                startDate,
+                null
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("2");
+        assertThat(result.get(0).getType()).isEqualTo(Transaction.TransactionType.INCOME);
+        verify(transactionRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Dovrebbe filtrare per tipo con solo endDate")
+    void shouldFilterByTypeWithOnlyEndDate() {
+        LocalDate endDate = LocalDate.of(2024, 1, 15);
+
+        Transaction oldExpense = Transaction.builder()
+                .id("1")
+                .amount(new BigDecimal("100.00"))
+                .category("Test")
+                .description("Old expense")
+                .type(Transaction.TransactionType.EXPENSE)
+                .date(LocalDateTime.of(2024, 1, 10, 10, 0))
+                .build();
+
+        Transaction newExpense = Transaction.builder()
+                .id("2")
+                .amount(new BigDecimal("200.00"))
+                .category("Test")
+                .description("New expense")
+                .type(Transaction.TransactionType.EXPENSE)
+                .date(LocalDateTime.of(2024, 1, 20, 10, 0))
+                .build();
+
+        Transaction oldIncome = Transaction.builder()
+                .id("3")
+                .amount(new BigDecimal("50.00"))
+                .category("Test")
+                .description("Old income")
+                .type(Transaction.TransactionType.INCOME)
+                .date(LocalDateTime.of(2024, 1, 10, 10, 0))
+                .build();
+
+        List<Transaction> transactions = Arrays.asList(oldExpense, newExpense, oldIncome);
+        when(transactionRepository.findAll()).thenReturn(transactions);
+
+        List<Transaction> result = transactionService.filterTransactions(
+                Transaction.TransactionType.EXPENSE,
+                null,
+                endDate
+        );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo("1");
+        assertThat(result.get(0).getType()).isEqualTo(Transaction.TransactionType.EXPENSE);
         verify(transactionRepository, times(1)).findAll();
     }
 
