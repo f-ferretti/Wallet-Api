@@ -6,6 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repository interface for Transaction entity.
+ * Provides database operations for transaction management.
+ */
 @Repository
 public interface TransactionRepository extends MongoRepository<Transaction, String> {
 

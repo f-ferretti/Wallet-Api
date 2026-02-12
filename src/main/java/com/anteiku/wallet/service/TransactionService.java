@@ -15,6 +15,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service class for managing wallet transactions.
+ * Provides business logic for transaction operations and calculations.
+ */
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -61,13 +65,25 @@ public class TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    public List<Transaction> filterTransactions(Transaction.TransactionType type, LocalDate startDate, LocalDate endDate) {
+    /**
+     * Filters transactions by type and date range.
+     *
+     * @param type transaction type (INCOME or EXPENSE), null for all types
+     * @param startDate start date for filtering, null for no start limit
+     * @param endDate end date for filtering, null for no end limit
+     * @return list of filtered transactions
+     */
+    public List<Transaction> filterTransactions(Transaction.TransactionType type,
+                                                 LocalDate startDate,
+                                                 LocalDate endDate) {
         List<Transaction> transactions = transactionRepository.findAll();
 
         return transactions.stream()
                 .filter(t -> type == null || t.getType() == type)
                 .filter(t -> {
-                    if (startDate == null && endDate == null) return true;
+                    if (startDate == null && endDate == null) {
+                        return true;
+                    }
                     LocalDateTime txDate = t.getDate();
                     if (startDate != null && endDate != null) {
                         LocalDateTime start = startDate.atStartOfDay();
@@ -82,6 +98,11 @@ public class TransactionService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Calculates summary statistics including total income, expense, and balance.
+     *
+     * @return map containing totalIncome, totalExpense, and balance
+     */
     public Map<String, BigDecimal> getSummary() {
         List<Transaction> all = transactionRepository.findAll();
 

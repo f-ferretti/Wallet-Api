@@ -10,13 +10,25 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * REST controller for wallet transaction management.
+ * Provides endpoints for CRUD operations on transactions.
+ */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -26,7 +38,8 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping("/transactions")
-    @Operation(summary = "Aggiungi una transazione", description = "Crea una nuova transazione (entrata o uscita)")
+    @Operation(summary = "Aggiungi una transazione",
+            description = "Crea una nuova transazione (entrata o uscita)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Transazione creata con successo"),
         @ApiResponse(responseCode = "400", description = "Dati non validi")
@@ -37,7 +50,7 @@ public class TransactionController {
     }
 
     @GetMapping("/transactions")
-    @Operation(summary = "Ottieni tutte le transazioni", description = "Restituisce la lista completa delle transazioni")
+    @Operation(summary = "Ottieni tutte le transazioni", description = "Fornisce la lista completa delle transazioni")
     @ApiResponse(responseCode = "200", description = "Lista delle transazioni")
     public ResponseEntity<List<Transaction>> getAllTransactions() {
         return ResponseEntity.ok(transactionService.getAllTransactions());

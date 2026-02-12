@@ -14,6 +14,10 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Entity representing a wallet transaction.
+ * Contains information about income or expense transactions.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -49,8 +53,18 @@ public class Transaction {
     @Schema(description = "Tipo di transazione", example = "EXPENSE")
     private TransactionType type = TransactionType.EXPENSE;
 
+    /**
+     * Enum representing the type of transaction.
+     */
     @Schema(description = "Tipo di transazione: INCOME (entrata) o EXPENSE (uscita)")
     public enum TransactionType {
-        INCOME, EXPENSE
+        /**
+         * Income transaction.
+         */
+        INCOME,
+        /**
+         * Expense transaction.
+         */
+        EXPENSE
     }
 }
